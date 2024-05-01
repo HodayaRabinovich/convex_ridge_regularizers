@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
@@ -16,6 +17,11 @@ sys.path.append('../inverse_problems')
 from utils_inverse_problems.reconstruction_map_crr import AdaGD_Recon, AGD_Recon
 
 
+# HR:
+from extra.utils import batch_images
+import matplotlib.pyplot as plt
+# HR - end
+
 ssim = StructuralSimilarityIndexMeasure()
 torch.set_num_threads(4)
 torch.manual_seed(0)
@@ -33,9 +39,13 @@ def test(model, lmbd, mu, sigma=25, tol=1e-6):
     ssim_val = torch.zeros(len(test_dataloader))
     n_restart_val = torch.zeros(len(test_dataloader))
     n_iter_val = torch.zeros(len(test_dataloader))
+    # HR:
+    noisy_img = []
+    # HR - end
     for idx, im in enumerate(test_dataloader):
         im = im.to(device)
         im_noisy = im + sigma/255*torch.empty_like(im).normal_()
+        noisy_img.append(im_noisy)  # HR
         #im_denoised, n_iter, n_restart = utils.accelerated_gd(im_noisy, model, ada_restart=True, lmbd=lmbd, tol=tol, mu=mu, use_strong_convexity=True)
         
         im_denoised, n_iter = utils.AdaGD(im_noisy, model, lmbd=lmbd, tol=tol, mu=mu)
@@ -46,12 +56,13 @@ def test(model, lmbd, mu, sigma=25, tol=1e-6):
         n_restart_val[idx] = 0
 
         print(f"{idx+1} - running average: {psnr_val[:idx+1].mean().item():.3f}, {n_iter_val[:idx+1].mean().item():.3f}")
-    return(psnr_val.mean().item(), ssim_val.mean().item(), n_iter_val.mean().item())
+    # return(psnr_val.mean().item(), ssim_val.mean().item(), n_iter_val.mean().item())  # comment by HR
+    return(psnr_val.mean().item(), ssim_val.mean().item(), n_iter_val.mean().item(), noisy_img)  # HR
 
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='PyTorch Training')
-    parser.add_argument('-d', '--device', default="cuda", type=str,
+    parser.add_argument('-d', '--device', default="cpu", type=str,
                         help='device to use')
     
     parser.add_argument('-t', '--t', default=[5], type=int, nargs="*",
@@ -114,8 +125,18 @@ if __name__=="__main__":
             raise ValueError("No validation data found for this model")
 
         with torch.no_grad():
-            psnr_, ssim_, n_iter = test(model, lmbd=lmbd, mu=mu, sigma=sigma_test)
-    
+            # psnr_, ssim_, n_iter = test(model, lmbd=lmbd, mu=mu, sigma=sigma_test)  # comment by HR
+
+            # HR:
+            psnr_, ssim_, n_iter, noisy_img = test(model, lmbd=lmbd, mu=mu, sigma=sigma_test)
+        nn = 5
+        batched_image = batch_images(noisy_img[:nn*nn], nn, nn)
+        plt.imshow(batched_image)
+        plt.tight_layout()
+        plt.title('Noisy Images')
+        plt.axis('off')
+        plt.show()
+        # end - HR
         print(f"PSNR: {psnr_:.2f} dB")
 
         # save

@@ -153,11 +153,11 @@ def data_augmentation(image, mode):
 
 
 if __name__ == "__main__":
-    image_type = "MRI"
+    image_type = "BSD"
     if image_type == 'MRI':
         stride = 5
         aug_times = 1
     else:
         stride = 10
         aug_times = 1
-    prepare_data(patch_size=40, stride=stride, aug_times=aug_times, image_type="MRI")
+    prepare_data(patch_size=40, stride=stride, aug_times=aug_times, image_type=image_type)

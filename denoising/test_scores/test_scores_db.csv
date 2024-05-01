@@ -68,4 +68,4 @@ sigma_test,sigma_train,model_name,psnr,denoiser_type,t
 29,5,Sigma_5_t_10,27.415246963500977,proximal,10
 30,5,Sigma_5_t_10,27.26817321777344,proximal,10
 5,5,Sigma_5_t_5,36.91049575805664,proximal,5
-5,5,Sigma_5_t_1,36.87199783325195,tsteps,1
+5,5,Sigma_5_t_1,36.872894287109375,tsteps,1

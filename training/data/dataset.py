@@ -10,6 +10,7 @@ from PIL import Image
 
 random.seed(42)
 
+
 class H5PY(Dataset):
     def __init__(self, data_file, randomize=True):
         super(Dataset, self).__init__()
@@ -19,6 +20,7 @@ class H5PY(Dataset):
             self.keys_list = list(file.keys())
             if randomize:
                 random.shuffle(self.keys_list)
+
 
 
     def __len__(self):

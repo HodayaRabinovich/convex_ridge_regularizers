@@ -9,10 +9,17 @@ from torchmetrics.functional import peak_signal_noise_ratio as psnr
 import os
 import sys
 
+import extra.utils
+
 sys.path.append("../")
 from models import utils
 from training.data import dataset
 import pandas as pd
+
+# HR:
+from extra.utils import batch_images
+import matplotlib.pyplot as plt
+# HR - end
 
 torch.set_num_threads(4)
 torch.manual_seed(0)
@@ -28,6 +35,11 @@ def test(model, sigma, t):
     ssim = StructuralSimilarityIndexMeasure()
 
     ssim = ssim.to(device)
+
+    # HR:
+    noisy_im = []
+    denoised_im = []
+    # HR - end
   
     for idx, im in enumerate(val_dataloader):
         im = im.to(device)
@@ -38,17 +50,25 @@ def test(model, sigma, t):
         psnr_val[idx] = psnr(im_denoised, im, data_range=1)
         ssim_val[idx] = ssim(im_denoised, im)
         print(f"{idx+1} - running average : {psnr_val[:idx+1].mean().item():.3f}dB")
-    return(psnr_val.mean().item(), ssim_val.mean().item())
+
+        # HR:
+        init_psnr_val = psnr(im_init, im, data_range=1)
+        print(f"{idx + 1} - init PSNR : {init_psnr_val.item():.3f}dB, final PSNR: {psnr_val[idx].item()}")
+        noisy_im.append(torch.squeeze(im_noisy))
+        denoised_im.append(torch.squeeze(im_denoised))
+    # return(psnr_val.mean().item(), ssim_val.mean().item()) comment by HR
+    return(psnr_val.mean().item(), ssim_val.mean().item(), noisy_im, denoised_im)
+#     HR - end
 
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='PyTorch Training')
-    parser.add_argument('-d', '--device', default="cuda", type=str,
+    parser.add_argument('-d', '--device', default="cpu", type=str,
                         help='device to use')
     
     parser.add_argument('-t', '--t', default=[1], type=int, nargs="*",
                         help='model selection (list): number of steps used at training subset of (1,2,5,10,20,30,50)')
-    
+
     parser.add_argument('-nl', '--noise_level', default=5, type=int,
                     help='model selection: noise level used at training and for testing')
     
@@ -82,8 +102,31 @@ if __name__=="__main__":
 
        
         with torch.no_grad():
-            psnr_, ssim_ = test(model, t=t, sigma=sigma_test)
-       
+            # HR:
+            # psnr_, ssim_ = test(model, t=t, sigma=sigma_test) #comment by HR
+            psnr_, ssim_m, noisy_im, denoised_im = test(model, t=t, sigma=sigma_test)
+        nn = 2
+        vert_noise, hori_noise = extra.utils.create_img_list(noisy_im)
+        vert_denoise, hori_denoise = extra.utils.create_img_list(denoised_im)
+        batched_noisy = batch_images(vert_noise[:nn * nn], nn, nn)
+        batched_de = batch_images(vert_denoise[:nn * nn], nn, nn)
+
+
+        plt.figure()
+        plt.subplot(1, 2, 1)
+        plt.imshow(batched_noisy, cmap='gray')
+        plt.tight_layout()
+        plt.title('Noisy Images')
+        plt.axis('off')
+
+        plt.subplot(1, 2, 2)
+        plt.imshow(batched_de, cmap='gray')
+        plt.tight_layout()
+        plt.title('After Denoising')
+        plt.axis('off')
+        plt.show()
+        # end - HR
+
         print(f"PSNR: {psnr_:.2f} dB")
 
         # save
