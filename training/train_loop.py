@@ -13,7 +13,8 @@ def main(device):
     config_init = json.load(open(config_path))
     
     # loop over t-step training
-    for t in [1, 2, 5, 10, 20, 30, 50]:
+    # for t in [1, 2, 5, 10, 20, 30, 50]:
+    for t in [1, 2]:
         print(f"**** {t}-step(s) training *****","\n")
         config = copy.deepcopy(config_init)
         config["training_options"]["t_steps"] = t
@@ -35,7 +36,7 @@ def main(device):
 if __name__ == '__main__':
     # PARSE THE ARGS
     parser = argparse.ArgumentParser(description='PyTorch Training')
-    parser.add_argument('-d', '--device', default="cuda", type=str,
+    parser.add_argument('-d', '--device', default="cpu", type=str,
                         help='device to use')
     args = parser.parse_args()
 

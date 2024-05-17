@@ -1,4 +1,5 @@
 import torch
+import torch
 from torch.utils.data import DataLoader
 from data import dataset
 import os, sys
@@ -67,7 +68,8 @@ class Trainer:
         with open(config_save_path, 'w') as handle:
             json.dump(self.config, handle, indent=4, sort_keys=True)
 
-        writer_dir = os.path.join(config["logging_info"]['log_dir'], config["exp_name"], 'tensorboard_logs')
+        # writer_dir = os.path.join(config["logging_info"]['log_dir'], config["exp_name"], 'tensorboard_logs')
+        writer_dir = '../trained_models/test/Sigma_11_t_1'
         self.writer = tensorboard.SummaryWriter(writer_dir)
 
     def set_optimization(self):

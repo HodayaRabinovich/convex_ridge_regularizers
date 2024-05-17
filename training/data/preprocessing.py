@@ -112,8 +112,29 @@ def prepare_data(patch_size, stride, aug_times=1, image_type='BSD'):
             h5f.create_dataset(str(test_num), data=img)
             test_num += 1
         h5f.close()
-    else:
+    elif image_type == "MRI":
+        # HR:
+        print('\nprocess test data')
+        files.clear()
+        files1 = glob.glob(os.path.join('./images/MRI/test/brain_tumor_dataset/yes', '*.jpg'))
+        files2 = glob.glob(os.path.join('./images/MRI/test/brain_tumor_dataset/no', '*.jpg'))
+        files = files1 + files2
+        files.sort()
+        output_directory_test = f'preprocessed/{image_type}'
+        if not os.path.exists(output_directory_test):
+            os.makedirs(output_directory_test)
+        h5f = h5py.File(f'{output_directory_test}/test.h5', 'w')
         test_num = 0
+        for i in range(len(files)):
+            print("file: %s" % files[i])
+            img = cv2.imread(files[i])
+            img = np.expand_dims(img[:,:,0], 0)
+            img = np.float32(normalize(img))
+            h5f.create_dataset(str(test_num), data=img)
+            test_num += 1
+        h5f.close()
+        # HR - end
+        # test_num = 0 #  comment by HR
 
     print('training set, # samples %d\n' % train_num)
     print('val set, # samples %d\n' % val_num)
@@ -153,7 +174,7 @@ def data_augmentation(image, mode):
 
 
 if __name__ == "__main__":
-    image_type = "BSD"
+    image_type = "MRI"
     if image_type == 'MRI':
         stride = 5
         aug_times = 1

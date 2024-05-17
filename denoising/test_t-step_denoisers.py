@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 torch.set_num_threads(4)
 torch.manual_seed(0)
 
-val_dataset = dataset.H5PY("../training/data/preprocessed/BSD/test.h5")
+val_dataset = dataset.H5PY("../training/data/preprocessed/MRI/test.h5")
 val_dataloader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 
 def test(model, sigma, t):
@@ -39,8 +39,10 @@ def test(model, sigma, t):
     # HR:
     noisy_im = []
     denoised_im = []
+    init_psnr = torch.zeros(len(val_dataloader))
+
     # HR - end
-  
+    # sigma = 25
     for idx, im in enumerate(val_dataloader):
         im = im.to(device)
         im_noisy = im + sigma/255*torch.empty_like(im).normal_()
@@ -52,12 +54,12 @@ def test(model, sigma, t):
         print(f"{idx+1} - running average : {psnr_val[:idx+1].mean().item():.3f}dB")
 
         # HR:
-        init_psnr_val = psnr(im_init, im, data_range=1)
-        print(f"{idx + 1} - init PSNR : {init_psnr_val.item():.3f}dB, final PSNR: {psnr_val[idx].item()}")
+        init_psnr[idx] = psnr(im_init, im, data_range=1)
+        print(f"{idx + 1} - init PSNR : {init_psnr[idx].item():.3f}dB, final PSNR: {psnr_val[idx].item()}")
         noisy_im.append(torch.squeeze(im_noisy))
         denoised_im.append(torch.squeeze(im_denoised))
     # return(psnr_val.mean().item(), ssim_val.mean().item()) comment by HR
-    return(psnr_val.mean().item(), ssim_val.mean().item(), noisy_im, denoised_im)
+    return(psnr_val, init_psnr, ssim_val.mean().item(), noisy_im, denoised_im)
 #     HR - end
 
 
@@ -69,7 +71,7 @@ if __name__=="__main__":
     parser.add_argument('-t', '--t', default=[1], type=int, nargs="*",
                         help='model selection (list): number of steps used at training subset of (1,2,5,10,20,30,50)')
 
-    parser.add_argument('-nl', '--noise_level', default=5, type=int,
+    parser.add_argument('-nl', '--noise_level', default=7, type=int,
                     help='model selection: noise level used at training and for testing')
     
    
@@ -85,7 +87,7 @@ if __name__=="__main__":
     # test for various t-steps models
     for t in list_t:
         
-        exp_name = f"{exp_n}_t_{t}"
+        exp_name = f"test/{exp_n}_t_{t}"
 
         print(f"**** Testing model ***** {exp_name}")
 
@@ -104,30 +106,43 @@ if __name__=="__main__":
         with torch.no_grad():
             # HR:
             # psnr_, ssim_ = test(model, t=t, sigma=sigma_test) #comment by HR
-            psnr_, ssim_m, noisy_im, denoised_im = test(model, t=t, sigma=sigma_test)
+            psnr_, init_psnr, ssim_m, noisy_im, denoised_im = test(model, t=t, sigma=sigma_test)
         nn = 2
-        vert_noise, hori_noise = extra.utils.create_img_list(noisy_im)
-        vert_denoise, hori_denoise = extra.utils.create_img_list(denoised_im)
-        batched_noisy = batch_images(vert_noise[:nn * nn], nn, nn)
-        batched_de = batch_images(vert_denoise[:nn * nn], nn, nn)
-
-
         plt.figure()
-        plt.subplot(1, 2, 1)
-        plt.imshow(batched_noisy, cmap='gray')
-        plt.tight_layout()
-        plt.title('Noisy Images')
-        plt.axis('off')
-
-        plt.subplot(1, 2, 2)
-        plt.imshow(batched_de, cmap='gray')
-        plt.tight_layout()
-        plt.title('After Denoising')
-        plt.axis('off')
+        plt.suptitle("t-step denoisers")
+        for idx in range(nn*nn):
+            plt.subplot(2, nn*nn, idx+1)
+            plt.imshow(noisy_im[idx], cmap='gray')
+            plt.title(f"psnr: {init_psnr[idx].item():.2f}")
+            plt.axis('off')
+            plt.subplot(2, nn * nn, idx + nn*nn+1)
+            plt.imshow(denoised_im[idx], cmap='gray')
+            plt.title(f"psnr: {psnr_[idx].item():.2f}")
+            plt.tight_layout()
+            plt.axis('off')
         plt.show()
+        # vert_noise, hori_noise = extra.utils.create_img_list(noisy_im)
+        # vert_denoise, hori_denoise = extra.utils.create_img_list(denoised_im)
+        # batched_noisy = batch_images(vert_noise[:nn * nn], nn, nn)
+        # batched_de = batch_images(vert_denoise[:nn * nn], nn, nn)
+
+
+        # plt.figure()
+        # plt.subplot(1, 2, 1)
+        # plt.imshow(batched_noisy, cmap='gray')
+        # plt.tight_layout()
+        # plt.title('Noisy Images')
+        # plt.axis('off')
+        #
+        # plt.subplot(1, 2, 2)
+        # plt.imshow(batched_de, cmap='gray')
+        # plt.tight_layout()
+        # plt.title('After Denoising')
+        # plt.axis('off')
+        # plt.show()
         # end - HR
 
-        print(f"PSNR: {psnr_:.2f} dB")
+        print(f"PSNR: {psnr_.mean().item():.2f} dB")
 
         # save
         path = "./test_scores/test_scores_db.csv"

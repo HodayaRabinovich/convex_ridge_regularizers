@@ -12,7 +12,8 @@ def main(device):
     config_path = 'configs/config.json'
     config = json.load(open(config_path))
 
-    exp_dir = os.path.join(config['logging_info']['log_dir'], config['exp_name'])
+    # exp_dir = os.path.join(config['logging_info']['log_dir'], config['exp_name'])
+    exp_dir = '../trained_models/test/Sigma_11_t_1'
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
     
@@ -28,7 +29,7 @@ def main(device):
 if __name__ == '__main__':
     # PARSE THE ARGS
     parser = argparse.ArgumentParser(description='PyTorch Training')
-    parser.add_argument('-d', '--device', default="cuda", type=str,
+    parser.add_argument('-d', '--device', default="cpu", type=str,
                         help='device to use')
     args = parser.parse_args()
 

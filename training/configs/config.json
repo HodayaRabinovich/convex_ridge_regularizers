@@ -5,7 +5,7 @@
         "n_knots": 21,
         "name": "spline"
     },
-    "exp_name": "Sigma_25_t_1",
+    "exp_name": "Sigma_7_t_1",
     "logging_info": {
         "epochs_per_val": 1,
         "log_dir": "../trained_models/test",
@@ -26,7 +26,7 @@
         "lr_mu": 0.05,
         "lr_spline_coefficients": 5e-05
     },
-    "sigma": 25,
+    "sigma": 11,
     "train_dataloader": {
         "batch_size": 128,
         "num_workers": 1,
