@@ -29,6 +29,7 @@ class simple(nn.Module):
         super(simple, self).__init__()
         self.conv1 = nn.Conv2d(1, 1, kernel_size=3, padding=1, stride=1)
         self.avg = nn.AvgPool2d(2, 2)
+        self.pool = nn.MaxPool2d(2, 2)
         self.relu = nn.ReLU()
         self.fc = nn.Linear(56 * 56, 1)
         self.fc2 = nn.Linear(224, 1)
@@ -36,10 +37,10 @@ class simple(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         x = self.relu(x)
-        x = self.avg(x)
+        x = self.pool(x)
         x = self.conv1(x)
         x = self.relu(x)
-        x = self.avg(x)
+        x = self.pool(x)
         x = self.relu(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
@@ -56,15 +57,15 @@ target_size = (224, 224)
 # adding noise
 im_sigma = []
 y = []
-std = [5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]
+std = [5, 10, 15, 20, 25]
 for ix, sigma in enumerate(std):
     tmp = [add_white_noise(img, sigma) for img in imgs]
     # tmp = torch.stack(tmp)
     imgs_reshape = [resize_image_torch(img, target_size) for img in tmp]
     imgs_reshape_fft = [torch.fft.fft2(img) for img in imgs_reshape]
-    imgs_tensor = torch.vstack(imgs_reshape)
+    imgs_tensor = torch.vstack(imgs_reshape_fft)
     im_sigma.append(imgs_tensor)
-    y.append(torch.ones(len(im_sigma[ix]))*int(sigma-5)/2)
+    y.append(torch.ones(len(im_sigma[ix]))*int(sigma))
 x = torch.vstack(im_sigma).view(-1, 1, target_size[0], target_size[1])
 y = torch.hstack(y)
 
@@ -100,7 +101,7 @@ lr = np.zeros(epochs)
 name = 'simple'
 model_name = name + '.pth'
 
-mode = 'train'
+mode = 'test'
 if mode == 'train':
     model.train()
     print("start training")
@@ -111,7 +112,7 @@ if mode == 'train':
             labels = labels.float()
             optimizer.zero_grad()
             outputs = model(inputs)
-            loss = criterion(outputs, labels)
+            loss = criterion(outputs.squeeze(), labels)
             loss.backward()
             optimizer.step()
 
